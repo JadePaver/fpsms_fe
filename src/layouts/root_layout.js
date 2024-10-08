@@ -374,7 +374,7 @@ export default function RootLayout() {
           >
             Welcome, Admin, John
           </Typography>
-          <Button variant="outlined" sx={{ margin: "0.75rem" }} disableElevation>
+          <Button variant="outlined" sx={{ margin: "0.75rem" }} disableElevation onClick={() => navigate("/fpsms/login")}>
             <LogoutIcon />
           </Button>
         </Stack>

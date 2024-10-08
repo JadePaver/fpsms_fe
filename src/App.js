@@ -14,6 +14,7 @@ import ItemInventory from "./pages/itemInventory";
 import PurchaseOrder from "./pages/purchase_order";
 import DeliverySchedule from "./pages/deliverySchedule";
 import UserManagement from "./pages/userManagement";
+import Shopping from "./pages/shopping";
 
 const theme = createTheme({
   typography: {
@@ -53,7 +54,7 @@ const router = createBrowserRouter(
         <Route exact path="user_management" element={<UserManagement />} />
       </Route>
       <Route exact path="/fpsms/login" element={<Login />} />
-
+      <Route exact path="/fpsms/shopping" element={<Shopping />} />
       <Route path="*" element={<Page404 />} />
     </>
   )
