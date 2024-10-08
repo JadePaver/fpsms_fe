@@ -14,14 +14,15 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import CloseIcon from "@mui/icons-material/Close";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 
 const initialRows = [
   {
     id: 1,
-    description: "Plywood",
+    description: "Furniture#1",
     price: 500,
     stock: 25,
-    type: "Material",
+    type: "Furniture",
     batch_date: "01/02/2024",
     quantity: 8,
   },
@@ -36,17 +37,126 @@ const initialRows = [
   },
   {
     id: 3,
-    description: "Cement",
+    description: "Furniture#11",
     price: 200,
     stock: 50,
-    type: "Material",
+    type: "Furniture",
     batch_date: "03/01/2024",
     quantity: 1,
   },
 ];
 
+const recieptRows = [
+  {
+    id: 1,
+    reciept: "12N3532ASF341",
+    item_list: [
+      {
+        id: 1,
+        description: "Furniture#1",
+        price: 500,
+        stock: 25,
+        type: "Furniture",
+        batch_date: "01/02/2024",
+        quantity: 8,
+      },
+      {
+        id: 2,
+        description: "Furniture#3",
+        price: 7200,
+        stock: 3,
+        type: "Furniture",
+        batch_date: "02/24/2024",
+        quantity: 2,
+      },
+      {
+        id: 3,
+        description: "Furniture#11",
+        price: 200,
+        stock: 50,
+        type: "Furniture",
+        batch_date: "03/01/2024",
+        quantity: 1,
+      },
+    ],
+    date: "01/02/2024",
+    status: "Completely Paid",
+  },
+  {
+    id: 2,
+    reciept: "12N3532ASF342",
+    item_list: [
+      {
+        id: 4,
+        description: "Furniture#4",
+        price: 800,
+        stock: 10,
+        type: "Furniture",
+        batch_date: "04/01/2024",
+        quantity: 5,
+      },
+      {
+        id: 5,
+        description: "Furniture#5",
+        price: 1200,
+        stock: 20,
+        type: "Furniture",
+        batch_date: "05/01/2024",
+        quantity: 3,
+      },
+      {
+        id: 6,
+        description: "Furniture#12",
+        price: 300,
+        stock: 40,
+        type: "Furniture",
+        batch_date: "06/01/2024",
+        quantity: 2,
+      },
+    ],
+    date: "02/02/2024",
+    status: "Awaitaing Payment",
+  },
+  {
+    id: 3,
+    reciept: "12N3532ASF343",
+    item_list: [
+      {
+        id: 7,
+        description: "Furniture#7",
+        price: 1000,
+        stock: 15,
+        type: "Furniture",
+        batch_date: "07/01/2024",
+        quantity: 4,
+      },
+      {
+        id: 8,
+        description: "Furniture#8",
+        price: 1500,
+        stock: 30,
+        type: "Furniture",
+        batch_date: "08/01/2024",
+        quantity: 1,
+      },
+      {
+        id: 9,
+        description: "Furniture#13",
+        price: 400,
+        stock: 60,
+        type: "Furniture",
+        batch_date: "09/01/2024",
+        quantity: 3,
+      },
+    ],
+    date: "03/02/2024",
+    status: "Completely Paid",
+  },
+];
+
 const PurchaseOrder = () => {
   const [rows, setRows] = useState(initialRows);
+  const [recieptView, setRecieptView] = useState(0);
   const [purchaseItems, setPurchaseItems] = useState([]);
 
   // Handle input change in purchase items
@@ -63,7 +173,11 @@ const PurchaseOrder = () => {
   };
 
   const handleAddItem = (row) => {
-
+    if (recieptView) {
+      console.log("itemList:", row);
+      setPurchaseItems(row);
+      return;
+    }
     const itemExists = purchaseItems.some(
       (item) => item.description === row.description
     );
@@ -76,8 +190,82 @@ const PurchaseOrder = () => {
     } else {
       console.log("Item already exists:", row.description);
     }
-
   };
+
+  const reciept_columns = [
+    { field: "reciept", headerName: "Reciept #", flex: 2 },
+    { field: "date", headerName: "Checkout Date", flex: 2 },
+    {
+      field: "item_list",
+      headerName: "List of Items",
+      flex: 2,
+      renderCell: (params) => {
+        console.log("params:", params.row);
+        return (
+          <Stack
+            sx={{
+              width: "100%",
+              height: "100%",
+              overflowY: "auto",
+              maxHeight: "100px",
+            }}
+          >
+            {params.row.item_list.map((item) => (
+              <Typography key={item.id}>
+                {item.description} (Qty: {item.quantity})
+              </Typography>
+            ))}
+          </Stack>
+        );
+      },
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      flex: 2,
+      renderCell: (params) => {
+        const statusColor =
+          params.value === "Awaitaing Payment"
+            ? "#BEC400"
+            : params.value === "Completely Paid"
+            ? "#008000"
+            : "black";
+        return (
+          <Typography sx={{ color: statusColor }}>{params.value}</Typography>
+        );
+      },
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1,
+      renderCell: (params) => (
+        <Stack
+          spacing={1}
+          direction="row"
+          sx={{
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100%",
+          }}
+        >
+          <Button
+            disableElevation
+            color="success"
+            variant="contained"
+            sx={{
+              padding: 0.5,
+              minWidth: 0,
+              minHeight: 0,
+            }}
+            onClick={() => handleAddItem(params.row.item_list)}
+          >
+            <AddRoundedIcon />
+          </Button>
+        </Stack>
+      ),
+    },
+  ];
 
   const columns = [
     { field: "description", headerName: "Description", flex: 2 },
@@ -184,7 +372,7 @@ const PurchaseOrder = () => {
                   startAdornment: (
                     <InputAdornment position="start">
                       <Button
-                      disableElevation 
+                        disableElevation
                         variant="contained"
                         color="error"
                         sx={{
@@ -237,18 +425,52 @@ const PurchaseOrder = () => {
               0
             )}
           </Typography>
-          <Stack sx={{alignItems:'end',paddingTop:'1.5rem'}}>
-            <Button color="success" variant="contained">Save Sale</Button>
+          <Stack sx={{ alignItems: "end", paddingTop: "1.5rem" }}>
+            <Button color="success" variant="contained">
+              Save Sale
+            </Button>
           </Stack>
         </Stack>
         <Box sx={{ borderRadius: "0.2rem", bgcolor: "white", width: "65%" }}>
-          <DataGrid
-            sx={{ width: "100%", height: "100%" }}
-            rows={rows}
-            columns={columns}
-            pageSize={5}
-            rowsPerPageOptions={[5, 10]}
-          />
+          <Stack sx={{ p: "0.2rem", alignItems: "flex-end" }}>
+            <Button
+              variant="contained"
+              sx={{ width: "fit-content" }}
+              startIcon={
+                recieptView === 1 ? (
+                  <Inventory2OutlinedIcon />
+                ) : (
+                  <ReceiptLongRoundedIcon />
+                )
+              }
+              disableElevation
+              onClick={() => {
+                setRecieptView((rec) => (rec === 0 ? 1 : 0));
+                setPurchaseItems([]);
+              }}
+            >
+              {recieptView === 1 ? "Inventory Table" : "Purchase Order Table"}
+            </Button>
+          </Stack>
+
+          {recieptView === 1 ? (
+            <>
+              <DataGrid
+                sx={{ width: "100%", height: "100%" }}
+                rows={recieptRows}
+                columns={reciept_columns}
+                rowHeight={200}
+              />
+            </>
+          ) : (
+            <DataGrid
+              sx={{ width: "100%", height: "100%" }}
+              rows={rows}
+              columns={columns}
+              pageSize={5}
+              rowsPerPageOptions={[5, 10]}
+            />
+          )}
         </Box>
       </Stack>
     </>

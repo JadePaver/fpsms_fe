@@ -69,7 +69,7 @@ const DeliverySchedule = () => {
           position: "relative", // Position for floating effect
           height: isHovered ? "auto" : "30px", // Change height based on hover state
           width: isHovered ? "auto" : "100%", // Change width based on hover state
-          overflow: "visible", // Show overflow when expanded
+          overflow: "hidden", // Show overflow when expanded
           borderRadius: "4px", // Round corners
           backgroundColor: isHovered ? "#007BFF" : "transparent",
           boxShadow: isHovered ? "0px 4px 10px rgba(0, 0, 0, 0.2)" : "none", // Add shadow when hovered
