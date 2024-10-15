@@ -1,18 +1,21 @@
-import React, { useState } from "react"; // Import useState
+import React, { useEffect, useState } from "react";
+
+import apiClient from "../axios/axiosInstance";
+
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import Dialog from "@mui/material/Dialog";
+import { useSnackbar } from "../layouts/root_layout";
 
 import GroupsIcon from "@mui/icons-material/Groups";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import InventoryIcon from "@mui/icons-material/Inventory";
+import KeyboardDoubleArrowRightRoundedIcon from "@mui/icons-material/KeyboardDoubleArrowRightRounded";
+import KeyboardDoubleArrowLeftRoundedIcon from "@mui/icons-material/KeyboardDoubleArrowLeftRounded";
 
 import Stack from "@mui/material/Stack";
 import FullCalendar from "@fullcalendar/react";
@@ -26,37 +29,38 @@ import dayjs from "dayjs";
 
 const DeliverySchedule = () => {
   const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [events, setEvents] = useState([]);
   const [hoveredEventId, setHoveredEventId] = useState(null); // State to track hovered event
+  const [openForm, setOpenForm] = useState(false);
+  const { showSnackbar } = useSnackbar();
+  const [formValues, setFormValues] = useState({
+    delivery: "",
+    recieve_item: "",
+    remarks: "",
+    date: selectedDate,
+  });
 
-  const events = [
-    {
-      id: 1, // Unique ID for each event
-      title: "Event 1",
-      date: "2024-10-01",
-      extendedProps: {
-        description: `40 pcs - Ply-wood 
-4 pcs - Nail Box 
-2x - 16’ x 24’ Wooden Table Furniture
-1x - 11’ x 4’ Acacia Chair`, // Description is part of extendedProps
-      },
-    },
-    {
-      id: 2,
-      title: "Event 2",
-      date: "2024-10-11",
-      extendedProps: {
-        description: "This is the description for Event 2", // Add description
-      },
-    },
-    {
-      id: 3,
-      title: "Event 3",
-      date: "2024-10-26",
-      extendedProps: {
-        description: "This is the description for Event 3", // Add description
-      },
-    },
-  ];
+  const handleSubmit = () => {
+    const formattedData = {
+      ...formValues,
+      date: selectedDate.add(1, "day").format("YYYY-MM-DD"), // Add one day to selectedDate
+    };
+    apiClient.post("/delivery/add", formattedData).then(() => {
+      getEvents();
+      showSnackbar({
+        message: "Delivery event saved Successfully.",
+        severity: "success",
+      });
+    });
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormValues({
+      ...formValues,
+      [name]: value,
+    });
+  };
 
   const renderEventContent = (eventInfo) => {
     const isHovered = hoveredEventId === eventInfo.event.id;
@@ -66,12 +70,13 @@ const DeliverySchedule = () => {
         onMouseEnter={() => setHoveredEventId(eventInfo.event.id)} // Set hovered event ID on mouse enter
         onMouseLeave={() => setHoveredEventId(null)} // Reset on mouse leave
         sx={{
+          p: isHovered ? "1rem": 0,
           position: "relative", // Position for floating effect
           height: isHovered ? "auto" : "30px", // Change height based on hover state
-          width: isHovered ? "auto" : "100%", // Change width based on hover state
+          width: isHovered ? "200%" : "100%", // Change width based on hover state
           overflow: "hidden", // Show overflow when expanded
           borderRadius: "4px", // Round corners
-          backgroundColor: isHovered ? "#007BFF" : "transparent",
+          backgroundColor: isHovered ? "blue" : "transparent",
           boxShadow: isHovered ? "0px 4px 10px rgba(0, 0, 0, 0.2)" : "none", // Add shadow when hovered
           zIndex: isHovered ? 10 : 100, // Bring to front on hover
           transition: "all 0.4s ease",
@@ -79,7 +84,6 @@ const DeliverySchedule = () => {
       >
         <Tooltip
           title={eventInfo.event.title} // Show the full title on hover
-          arrow
           placement="top"
         >
           <Box>
@@ -106,6 +110,27 @@ const DeliverySchedule = () => {
     );
   };
 
+  const getEvents = () => {
+    apiClient.get("/delivery/get_all").then((res) => {
+      console.log("res.data:", res.data);
+      const formattedEvents = res.data.map((event) => ({
+        id: event.id,
+        title: event.delivery_name,
+        date: event.date_of_delivery.split("T")[0], // Extract only the date part
+        extendedProps: {
+          description: `${event.expected_item}\nRemarks: ${event.remarks}`, // Combine expected items and remarks
+        },
+      }));
+
+      // Update the state with the formatted events
+      setEvents(formattedEvents);
+    });
+  };
+
+  useEffect(() => {
+    getEvents();
+  }, []);
+
   return (
     <>
       <Stack
@@ -122,30 +147,48 @@ const DeliverySchedule = () => {
       >
         <Box
           sx={{
-            height: "100%",
-            width: "30%",
+            height: openForm ? "10%" : "100%",
+            width: openForm ? "6%" : "30%",
             bgcolor: "white",
             borderRadius: "0.2rem",
+            overflow: "hidden",
           }}
         >
           <Stack
-            spacing={2}
+            spacing={1}
             sx={{
               borderRadius: "0.2rem",
               bgcolor: "white",
-              p: "1rem",
+              p: "1rem 1rem 0 1rem",
               width: "100%",
               minHeight: "100%",
             }}
           >
+            <Stack sx={{ alignItems: "flex-end", m: "auto" }}>
+              <Button
+                disableElevation
+                variant={openForm ? "contained" : "outlined"}
+                color="secondary"
+                sx={{ width: "fit-content" }}
+                onClick={() => setOpenForm(!openForm)}
+              >
+                {openForm ? (
+                  <KeyboardDoubleArrowRightRoundedIcon />
+                ) : (
+                  <KeyboardDoubleArrowLeftRoundedIcon />
+                )}
+              </Button>
+            </Stack>
+
             <Typography sx={{ fontWeight: "bold", fontSize: "1.75rem" }}>
               ADD DELIVERY SCHEDULE
             </Typography>
             <TextField
+              required
+              placeholder="Driver John..."
               label="Deliver Name:"
               name="delivery"
               variant="outlined"
-              value={"Driver Jome"}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -153,15 +196,17 @@ const DeliverySchedule = () => {
                   </InputAdornment>
                 ),
               }}
+              value={formValues.delivery}
+              onChange={handleInputChange}
             />
             <TextField
+              required
+              placeholder="4x - Wooden Chair
+            15x - 2x1 Metal Bar
+            50x - 2x2 Wood Planks"
               label="Item to Recieve:"
               name="recieve_item"
               variant="outlined"
-              defaultValue={`40 pcs - Ply-wood 
-4 pcs - Nail Box 
-2x - 16’ x 24’ Wooden Table Furniture
-1x - 11’ x 4’ Acacia Chair`}
               multiline
               rows={6}
               InputProps={{
@@ -171,28 +216,40 @@ const DeliverySchedule = () => {
                   </InputAdornment>
                 ),
               }}
+              value={formValues.recieve_item}
+              onChange={handleInputChange}
             />
             <TextField
               label="Remarks:"
-              name="customer"
+              name="remarks"
               variant="outlined"
-              defaultValue={
-                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Eligendi nihil, architecto assumenda maiores ad temporibus."
-              }
               fullWidth
               multiline
               rows={6}
+              value={formValues.customer}
+              onChange={handleInputChange}
             />
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
                 label="Date of Delivery"
                 value={selectedDate}
-                onChange={(newValue) => setSelectedDate(newValue)}
+                onChange={(newValue) => {
+                  setSelectedDate(newValue);
+                  setFormValues((prevItem) => ({
+                    ...prevItem,
+                    date: newValue,
+                  }));
+                }}
                 renderInput={(params) => <TextField {...params} />}
               />
             </LocalizationProvider>
             <Stack sx={{ marginTop: "2rem" }}>
-              <Button variant="contained" fullWidth color="secondary">
+              <Button
+                variant="contained"
+                fullWidth
+                color="secondary"
+                onClick={handleSubmit}
+              >
                 Add Deliver Schedule
               </Button>
             </Stack>
@@ -201,7 +258,7 @@ const DeliverySchedule = () => {
         <Box
           sx={{
             height: "100%",
-            width: "70%",
+            width: openForm ? "94%" : "70%",
             bgcolor: "white",
             borderRadius: "0.2rem",
           }}
@@ -215,7 +272,9 @@ const DeliverySchedule = () => {
               center: "title",
               right: "dayGridMonth,dayGridWeek,dayGridDay",
             }}
-            eventContent={renderEventContent} // Use custom event content renderer
+            eventContent={renderEventContent}
+            height="auto"
+            width="auto"
           />
         </Box>
       </Stack>
