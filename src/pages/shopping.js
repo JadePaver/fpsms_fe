@@ -1,5 +1,8 @@
-import { useState, forwardRef } from "react";
-import { useNavigate} from "react-router-dom";
+import { useState, useEffect, forwardRef } from "react";
+import { useNavigate } from "react-router-dom";
+import apiClient from "../axios/axiosInstance";
+import "react-image-lightbox/style.css";
+import Lightbox from "react-image-lightbox";
 
 import Barcode from "react-barcode";
 
@@ -35,6 +38,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import Badge from "@mui/material/Badge";
+import Pagination from "@mui/material/Pagination";
 
 import DonutSmallRoundedIcon from "@mui/icons-material/DonutSmallRounded";
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
@@ -43,15 +47,27 @@ const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
+const ITEMS_PER_PAGE = 8;
+
 const Shopping = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [cart, setCart] = useState([]);
+  const [furnitures, setFurnitures] = useState([]);
+  const [resultReceipt, setResultReceipt] = useState("");
 
   const [openReciept, setOpenReciept] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const handleOpenReciept = () => {
+  const handleCheckout = () => {
     setOpenReciept(true);
+
+    apiClient.post("/po/checkout", cart).then((res) => {
+      setResultReceipt(res.data);
+    });
   };
 
   const handleCloseReciept = () => {
@@ -59,12 +75,11 @@ const Shopping = () => {
   };
 
   const handleAddToCart = (product) => {
-    const isProductInCart = cart.some((item) => item.id === product.id); // Check if product exists
+    const isProductInCart = cart.some((item) => item.id === product.id);
     if (!isProductInCart) {
-      setCart((prevCart) => [...prevCart, product]); // Add product to cart if not already present
-    } // Add product to cart
+      setCart((prevCart) => [...prevCart, { ...product, quantity: 0 }]);
+    }
     const data = cart;
-    console.log("cart:", data);
   };
 
   const handleClickOpen = () => {
@@ -75,37 +90,43 @@ const Shopping = () => {
     setOpen(false);
   };
 
-  const products = [
-    {
-      id: 1,
-      name: "Retro Wooden Chair",
-      price: 4500,
-      stock: 48,
-      image: "/chair.jpeg",
-    },
-    {
-      id: 2,
-      name: "Retro Wooden Chair",
-      price: 4500,
-      stock: 48,
-      image: "/chair.jpeg",
-    },
-    {
-      id: 3,
-      name: "Retro Wooden Chair",
-      price: 4500,
-      stock: 48,
-      image: "/chair.jpeg",
-    },
-    {
-      id: 4,
-      name: "Retro Wooden Chair",
-      price: 4500,
-      stock: 48,
-      image: "/chair.jpeg",
-    },
-    // Add more products as needed
-  ];
+  const openLightbox = (imageUrl) => {
+    setLightboxImage(imageUrl);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setLightboxImage("");
+  };
+  const fetchFurnitures = () => {
+    apiClient.get("/items/get_furnitures").then((res) => {
+      setFurnitures(res.data);
+    });
+  };
+
+  const filteredFurnitures = furnitures.filter((product) =>
+    product.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalItems = filteredFurnitures.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value);
+  };
+
+  // Calculate the current items to display based on the current page
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentItems = filteredFurnitures.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
+  );
+
+  useEffect(() => {
+    fetchFurnitures();
+  }, []);
+
   return (
     <>
       <Stack
@@ -115,37 +136,40 @@ const Shopping = () => {
           display: "flex",
         }}
       >
-        <Button sx={{p:0,m:0}}onClick={()=>navigate("/fpsms/login")}>
-        <Stack
-          id="header"
-          direction="row"
-          sx={{
-            backgroundColor: "#AC875D",
-            height: "9vh",
-            width: "100%",
-            display: "text",
-            justifyContent: "center",
-            textAlign: "center",
-            alignItems: "center",
-          }}
-        >
-          <Avatar sx={{ bgcolor: "white" }} onClick={()=>navigate("/fpsms/login")}>
-            <DonutSmallRoundedIcon
-              sx={{ m: "auto", fontSize: "29px", color: "#AC875D" }}
-            />
-          </Avatar>
-          <Typography
-            variant="h5" // Adjust size as needed
+        <Button sx={{ p: 0, m: 0 }} onClick={() => navigate("/fpsms/login")}>
+          <Stack
+            id="header"
+            direction="row"
             sx={{
-              maxWidth: "3rem",
-              lineHeight: "0.8rem",
-              fontWeight: "bold",
-              color: "#FFFFFF", // White text
+              backgroundColor: "#AC875D",
+              height: "9vh",
+              width: "100%",
+              display: "text",
+              justifyContent: { xs: "flex-start", sm: "center" },
+              textAlign: "center",
+              alignItems: "center",
             }}
           >
-            Butch Furniture
-          </Typography>
-        </Stack>
+            <Avatar
+              sx={{ bgcolor: "white", marginLeft: { xs: "30%", sm: 0 } }}
+              onClick={() => navigate("/fpsms/login")}
+            >
+              <DonutSmallRoundedIcon
+                sx={{ m: "auto", fontSize: "29px", color: "#AC875D" }}
+              />
+            </Avatar>
+            <Typography
+              variant="h5" // Adjust size as needed
+              sx={{
+                maxWidth: "3rem",
+                lineHeight: "0.8rem",
+                fontWeight: "bold",
+                color: "#FFFFFF", // White text
+              }}
+            >
+              Butch Furniture
+            </Typography>
+          </Stack>
         </Button>
         <Stack
           spacing={1}
@@ -154,11 +178,13 @@ const Shopping = () => {
             backgroundSize: "cover", // Ensure the image covers the entire container
             backgroundPosition: "center", // Center the image
             backgroundRepeat: "no-repeat", // Prevent repeating of the image
-            height: "100vh", // Full viewport height
+            height: "100%",
             display: "flex", // Flexbox to center login content
             justifyContent: "start", // Horizontally center
             alignItems: "center",
             padding: "1rem",
+            overflow: "hidden",
+            overflowY: "auto",
           }}
         >
           <Stack
@@ -175,10 +201,12 @@ const Shopping = () => {
             <Typography sx={{ flex: 1 }}>Search Something</Typography>
             <TextField
               sx={{ flex: 7 }}
-              name="description"
+              name="search"
               variant="outlined"
               placeholder="Wooden Chair..."
               fullWidth
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
             <Button sx={{ height: "100%" }} onClick={handleClickOpen}>
               <Badge badgeContent={cart.length} color="secondary">
@@ -191,28 +219,82 @@ const Shopping = () => {
           </Stack>
           <Grid
             container
-            spacing={2}
+            spacing={0.5}
             justifyContent="flex-start"
             alignItems="flex-start"
+            sx={{
+              padding: 0,
+              margin: 0,
+            }}
           >
-            {products.map((product) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-                <Card sx={{ maxWidth: "250px" }}>
+            {currentItems.map((product) => (
+              <Grid
+                item
+                xs={6}
+                sm={6}
+                md={4}
+                lg={3}
+                key={product.id}
+                sx={{ margin: "1rem auto 1rem auto" }}
+              >
+                <Card
+                  sx={{
+                    maxWidth: {
+                      xs: "95%",
+                      sm: "250px",
+                    },
+                    maxHeight: {
+                      xs: "250px",
+                      sm: "100%",
+                    },
+                  }}
+                  elevation={3}
+                >
                   <CardMedia
-                    sx={{ p: "1rem", borderRadius: "20px" }}
+                    sx={{
+                      m: "auto",
+                      p: "1rem",
+                      borderRadius: "20px", // Makes the border fully round
+                      maxWidth: "100%",
+                      width: "auto",
+                      // Ensure it scales proportionally
+                      height: {
+                        xs: "130px",
+                        sm: "170px",
+                      },
+                      objectFit: "cover",
+                    }}
                     component="img"
-                    height="170"
-                    image={product.image}
+                    image={`/item_images/${product.image}`}
                     alt={product.name}
+                    onClick={() =>
+                      openLightbox(`/item_images/${product.image}`)
+                    }
                   />
-                  <CardContent>
-                    <Typography gutterBottom variant="h6" component="div">
-                      {product.name}
+                  <CardContent
+                    sx={{
+                      p: {
+                        xs: "0 1rem",
+                        sm: "1rem",
+                      },
+                    }}
+                  >
+                    <Typography
+                      gutterBottom
+                      variant={{ xs: "body2", sm: "h6" }}
+                      component="div"
+                    >
+                      {product.description}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       ₱ {product.price}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      color={
+                        product.stock <= 0 ? "error.main" : "text.secondary"
+                      }
+                    >
                       Stocks: {product.stock}
                     </Typography>
                   </CardContent>
@@ -230,16 +312,35 @@ const Shopping = () => {
               </Grid>
             ))}
           </Grid>
+          <Stack
+            spacing={2}
+            fullWidth
+            alignItems="flex-start"
+            justifyContent="start"
+            sx={{ mt: 2, width: "100%", p: "0.5rem", borderRadius: "0.4rem" }}
+          >
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+              color="secondary"
+              shape="rounded"
+            />
+          </Stack>
         </Stack>
       </Stack>
+      {lightboxOpen && (
+        <Lightbox mainSrc={lightboxImage} onCloseRequest={closeLightbox} />
+      )}
+
       <Dialog
         fullScreen
         open={open}
         onClose={handleClose}
         TransitionComponent={Transition}
         sx={{
-          marginTop: "8vh",
-          height: `calc(100vh - 9vh)`, // This ensures the dialog occupies the rest of the space below 9vh
+          marginTop: { xs: "0", sm: "8vh" }, // Remove margin for mobile
+          height: { xs: "100vh", sm: `calc(100vh - 9vh)` }, // This ensures the dialog occupies the rest of the space below 9vh
         }}
       >
         <AppBar sx={{ position: "relative" }}>
@@ -256,12 +357,14 @@ const Shopping = () => {
               My Cart
             </Typography>
             <Button
+              disableElevation
+              disabled={cart.length === 0}
               autoFocus
               variant="contained"
               color="secondary"
               onClick={() => {
                 handleClose();
-                handleOpenReciept();
+                handleCheckout();
               }}
               sx={{ height: "80%" }}
             >
@@ -273,6 +376,7 @@ const Shopping = () => {
         <Box
           sx={{
             display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
             justifyContent: "space-between",
             alignItems: "center",
             padding: "1rem",
@@ -285,7 +389,7 @@ const Shopping = () => {
             ₱{" "}
             {cart
               .reduce(
-                (total, item) => total + item.price * (item.quantity || 1),
+                (total, item) => total + item.price * (item.quantity || 0),
                 0
               )
               .toLocaleString()}
@@ -303,7 +407,7 @@ const Shopping = () => {
           "& .MuiDialog-paper": {
             borderRadius: "0.4rem",
             border: "solid 1px #AC875D",
-            width: "350px",
+            width: "370px",
             textAlign: "center",
           },
         }}
@@ -330,7 +434,11 @@ const Shopping = () => {
           <CheckCircleIcon sx={{ fontSize: "140px", color: "green", mb: 2 }} />
 
           {/* Main Text */}
-          <Typography variant="h4" sx={{ fontWeight: "bold", mt: 2 }} color="secondary">
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: "bold", mt: 2 }}
+            color="secondary"
+          >
             THANK YOU !
           </Typography>
 
@@ -340,14 +448,18 @@ const Shopping = () => {
           </Typography>
 
           {/* Receipt Number */}
-          <Typography variant="h6" sx={{ mt: 3, fontWeight: "bold" }} color="secondary">
-            12N3532ASF341
+          <Typography
+            variant="h6"
+            sx={{ mt: 3, fontWeight: "bold" }}
+            color="secondary"
+          >
+            {resultReceipt}
           </Typography>
 
           {/* Barcode */}
           <Box sx={{ mt: 1 }}>
             <Barcode
-              value="12N3532ASF341"
+              value={resultReceipt}
               width={1.5} // Controls the width of each bar
               height={50} // Controls the height of the barcode
               displayValue={false}

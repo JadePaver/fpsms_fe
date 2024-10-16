@@ -1,6 +1,10 @@
+import { useState } from "react";
+import apiClient from "../axios/axiosInstance";
+
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import LinearProgress from "@mui/material/LinearProgress";
 import TextField from "@mui/material/TextField";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
@@ -12,6 +16,47 @@ import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState({ username: "", password: "" });
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setUser((prevUser) => ({
+      ...prevUser,
+      [name]: value, // Use the name of the input field to update the correct property
+    }));
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    if (!user.username || !user.password) {
+      setError("Please enter both username and password.");
+      return; // Prevent submission if fields are empty
+    }
+    setIsLoading(true);
+    apiClient
+      .post("/users/login", user)
+      .then((res) => {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("token", res.data.token);
+        navigate("/fpsms");
+      })
+      .catch((error) => {
+        if (error.response) {
+          setError(error.response.data.error);
+        } else if (error.request) {
+          setError("Server cannot be reached. Please try again later.");
+        } else {
+          setError("An unexpected error occurred.");
+        }
+        console.log("err:", error);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
 
   return (
     <>
@@ -105,7 +150,7 @@ const Login = () => {
                   backgroundColor: "rgba(255, 255, 255, 0.5)", // Optional hover effect
                 },
               }}
-              onClick={()=>navigate("/fpsms/shopping")}
+              onClick={() => navigate("/fpsms/shopping")}
             >
               <Stack
                 direction="column"
@@ -135,6 +180,7 @@ const Login = () => {
             </Button>
           </Stack>
           <Stack
+            component="form"
             direction="column"
             spacing={2}
             sx={{
@@ -149,32 +195,48 @@ const Login = () => {
               display: "flex",
               textAlign: "center",
             }}
+            onSubmit={handleLogin}
           >
             <Typography sx={{ fontSize: "2rem", fontWeight: "bold" }}>
               Log in
             </Typography>
+
             <Stack spacing={2}>
               <Stack direction="row" sx={{ alignItems: "center" }} spacing={1}>
                 <PersonIcon />
                 <TextField
                   fullWidth
-                  id="outlined-basic"
+                  required
+                  id="username"
+                  name="username"
                   label="Username"
                   variant="outlined"
                   sx={{ marginTop: "4rem" }}
+                  value={user.username}
+                  onChange={handleChange}
                 />
               </Stack>
               <Stack direction="row" sx={{ alignItems: "center" }} spacing={1}>
                 <KeyIcon />
                 <TextField
                   fullWidth
-                  id="outlined-basic"
+                  required
+                  id="password"
+                  name="password"
                   label="Password"
                   variant="outlined"
                   sx={{ marginTop: "4rem" }}
                   type="password"
+                  value={user.password}
+                  onChange={handleChange}
                 />
               </Stack>
+              {isLoading && <LinearProgress color="primary" />}
+              {error && (
+                <Typography sx={{ color: "red", m: 0, p: 0 }}>
+                  {error} {/* Display error message */}
+                </Typography>
+              )}
             </Stack>
 
             <Stack sx={{ alignItems: "center" }}>
@@ -182,7 +244,7 @@ const Login = () => {
                 sx={{ width: "50%", padding: "0.75rem" }}
                 color="secondary"
                 variant="contained"
-                onClick={() => navigate("/fpsms")}
+                type="submit"
               >
                 Log in
               </Button>

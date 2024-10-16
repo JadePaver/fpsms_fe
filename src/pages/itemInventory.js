@@ -10,92 +10,174 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Typography from "@mui/material/Typography";
+
 import Autocomplete from "@mui/material/Autocomplete";
 import OutlinedInput from "@mui/material/OutlinedInput";
 
+import Lightbox from "react-image-lightbox";
+import apiClient from "../axios/axiosInstance";
+import { useSnackbar } from "../layouts/root_layout";
+import ConfirmationDialog from "../component/confirmationDialog";
+
+import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
+import AddCircleOutlineRoundedIcon from "@mui/icons-material/AddCircleOutlineRounded";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 
 import { DataGrid } from "@mui/x-data-grid";
-import { useState } from "react";
-import dayjs from "dayjs";
-
-const rows = [
-  {
-    id: 1,
-    description: "Plywood",
-    price: 500,
-    stock: 25,
-    type: "Material",
-    batch_date: "01/02/2024",
-    quantity: 8,
-  },
-  {
-    id: 2,
-    description: "Furniture#3",
-    price: 7200,
-    stock: 3,
-    type: "Furniture",
-    batch_date: "02/24/2024",
-    quantity: 2,
-  },
-  {
-    id: 3,
-    description: "Cement",
-    price: 200,
-    stock: 50,
-    type: "Material",
-    batch_date: "03/01/2024",
-    quantity: 1,
-  },
-];
-
-const materials = [
-  {
-    Department: "Wood",
-    Description: "High-quality oak wood",
-    Stock: 120,
-    Price: "$200",
-    Batch_date: "2024-09-12",
-  },
-  {
-    Department: "Metal",
-    Description: "Stainless steel sheets",
-    Stock: 50,
-    Price: "$150",
-    Batch_date: "2024-09-01",
-  },
-  {
-    Department: "Plastic",
-    Description: "Durable plastic polymers",
-    Stock: 200,
-    Price: "$80",
-    Batch_date: "2024-08-28",
-  },
-];
+import { useEffect, useState } from "react";
 
 const ItemInventory = () => {
-  const [stacks, setStacks] = useState([{ material: null, quantity: 0 }]);
+  const [materials, setMaterials] = useState([]);
+  const [stacks, setStacks] = useState([{ material: { id: 1 }, quantity: 0 }]);
+  const [openAddForm, set_openAddForm] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [editMode, setEditMode] = useState(false);
+  const [allItems, setAllItems] = useState([]);
 
-  const handleAddStack = () => {
-    setStacks([...stacks, { material: null, quantity: 0 }]);
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+
+  const handleOpenConfirmDialog = (item) => {
+    setItemToDelete(item);
+    setOpenConfirmDialog(true);
   };
 
-  // Handler to remove a specific stack
+  // Function to close confirmation dialog
+  const handleCloseConfirmDialog = () => {
+    setOpenConfirmDialog(false);
+    setItemToDelete(null);
+  };
+
+  // Function to remove item after confirmation
+  const handleConfirmDelete = () => {
+    removeItem(itemToDelete);
+    handleCloseConfirmDialog(); // Close the dialog after deletion
+  };
+
+  //lightBox
+  const [lightboxOpen, setLightboxOpen] = useState(false); // Controls if the lightbox is open
+  const [lightboxImage, setLightboxImage] = useState("");
+
+  const openLightbox = (imageUrl) => {
+    setLightboxImage(imageUrl);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setLightboxImage("");
+  };
+
+  const { showSnackbar } = useSnackbar();
+
+  const [currentItem, setCurrentItem] = useState({
+    description: "",
+    stock: 0,
+    price: 0,
+    type: "",
+    selectedDate: selectedDate,
+  });
+
+  const submitItem = (e) => {
+    e.preventDefault();
+    const newItem = {
+      ...currentItem,
+      selectedDate: selectedDate.format("YYYY-MM-DD"), // Add one day to selectedDate
+    };
+
+    const formData = new FormData();
+    formData.append("item", JSON.stringify(newItem)); // Append item data as JSON
+    formData.append("ingredients", JSON.stringify(stacks)); // Append ingredients as JSON
+    if (currentItem.image) {
+      formData.append("image", currentItem.image); // Append the image file
+    }
+
+    let hasStockIssue = false;
+
+    if (currentItem.type === "Furniture") {
+      if (stacks.length < 2) {
+        showSnackbar({
+          message: "At least 1 materials is required for Furniture.",
+          severity: "warning",
+        });
+        return;
+      }
+
+      stacks.forEach((item) => {
+        if (item.quantity * currentItem.stock > item.material.stock) {
+          hasStockIssue = true;
+          showSnackbar({
+            message: `Insufficient stock for ${
+              item.material.description
+            }. Needed: ${item.quantity * currentItem.stock}, Available: ${
+              item.material.stock
+            }`,
+            severity: "error",
+          });
+        }
+      });
+    }
+    if (!hasStockIssue) {
+      if (editMode) {
+        apiClient
+          .post(`/items/update`, formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          })
+          .then((res) => {
+            if (res.status === 200) {
+              showSnackbar({
+                message: "Item updated successfully",
+                severity: "success",
+              });
+              getAllMaterials();
+              getAllItems();
+              set_openAddForm(false);
+              setEditMode(false);
+            }
+          });
+      } else {
+        apiClient
+          .post(`/items/create`, formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          })
+          .then((res) => {
+            if (res.status === 200) {
+              showSnackbar({
+                message: "Item added successfully",
+                severity: "success",
+              });
+              getAllMaterials();
+              getAllItems();
+              set_openAddForm(false);
+            }
+          });
+      }
+    }
+  };
+
+  const handleAddStack = () => {
+    const newStack = { material: null, quantity: 0 };
+    setStacks([...stacks, newStack]);
+  };
+
   const handleRemoveStack = (index) => {
     setStacks(stacks.filter((_, i) => i !== index));
   };
 
-  // Handler to update a specific stack's material and quantity
-  const handleChangeMaterial = (index, newMaterial) => {
+  const handleChangeMaterial = (index, newValue) => {
     const updatedStacks = [...stacks];
-    updatedStacks[index].material = newMaterial;
+    updatedStacks[index].material = newValue;
     setStacks(updatedStacks);
   };
 
@@ -105,16 +187,146 @@ const ItemInventory = () => {
     setStacks(updatedStacks);
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setCurrentItem((prevState) => ({
+      ...prevState,
+      image: file,
+    }));
+  };
+
   const columns = [
-    { field: "description", headerName: "Description", flex: 1 },
-    { field: "price", headerName: "Price", width: 150 },
-    { field: "stock", headerName: "Stock", width: 150 },
-    { field: "type", headerName: "Type", width: 150 },
-    { field: "batch_date", headerName: "Batch Date", width: 150 },
+    {
+      field: "description",
+      headerName: "Description",
+      flex: 2,
+      renderCell: (params) => (
+        <Typography
+          sx={{
+            display: "flex",
+            justifyContent: "start",
+            alignItems: "center",
+            height: "100%",
+          }}
+        >
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "image",
+      headerName: "Image",
+      flex: 1,
+      renderCell: (params) => {
+        const imageExists = Boolean(params.value);
+
+        return (
+          <Box
+            sx={{
+              height: imageExists ? 100 : 50, // Set height based on image presence
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              cursor: "pointer",
+            }}
+          >
+            {imageExists ? (
+              <Box
+                component="img"
+                sx={{
+                  height: "80%", // Adjust image height within the box
+                  width: "auto", // Keep width auto to maintain aspect ratio
+                  objectFit: "cover", // Ensures the image maintains aspect ratio
+                  borderRadius: "8px", // Optional: Add some styling
+                }}
+                src={`/item_images/${params.value}`} // Build the image path
+                alt={params.row.description}
+                onClick={() => openLightbox(`/item_images/${params.value}`)} // Set the alt text
+              />
+            ) : null}
+          </Box>
+        );
+      },
+    },
+    {
+      field: "price",
+      headerName: "Price",
+      flex: 1,
+      renderCell: (params) => (
+        <Typography
+          sx={{
+            display: "flex",
+            justifyContent: "end",
+            alignItems: "center",
+            height: "100%",
+          }}
+        >
+          ₱ {params.value.toFixed(2)}
+        </Typography>
+      ),
+    },
+    {
+      field: "stock",
+      headerName: "Stock",
+      flex: 1,
+      renderCell: (params) => (
+        <Typography
+          sx={{
+            display: "flex",
+            justifyContent: "end",
+            alignItems: "center",
+            height: "100%",
+          }}
+        >
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "type",
+      headerName: "Type",
+      flex: 1,
+      renderCell: (params) => (
+        <Typography
+          sx={{
+            display: "flex",
+            justifyContent: "end",
+            alignItems: "center",
+            height: "100%",
+          }}
+        >
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "batch_date",
+      headerName: "Batch Date",
+      flex: 1,
+      renderCell: (params) => {
+        // Format the date to "MM/DD/YYYY"
+        const date = new Date(params.value);
+        const formattedDate = `${
+          date.getMonth() + 1
+        }/${date.getDate()}/${date.getFullYear()}`;
+        return (
+          <Typography
+            sx={{
+              display: "flex",
+              justifyContent: "end",
+              alignItems: "center",
+              height: "100%",
+            }}
+          >
+            {formattedDate}
+          </Typography>
+        );
+      },
+    },
     {
       field: "actions",
       headerName: "Actions",
-      width: 150,
+      flex: 1,
       renderCell: (params) => (
         <Stack
           spacing={1}
@@ -159,7 +371,9 @@ const ItemInventory = () => {
               height: "40px",
             }}
             variant="contained"
-            onClick={() => {}}
+            onClick={() => {
+              handleOpenConfirmDialog(params.row);
+            }}
           >
             <DeleteIcon />
           </Button>
@@ -167,24 +381,24 @@ const ItemInventory = () => {
       ),
     },
   ];
-  const [openAddForm, set_openAddForm] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(dayjs());
-  const [editMode, setEditMode] = useState(false); // To manage edit mode
-  const [currentItem, setCurrentItem] = useState(null);
 
   const handleEdit = (item) => {
-    console.log("item:", item);
+    const formattedDate = dayjs(item.batch_date);
     setCurrentItem(item);
-    setSelectedDate(dayjs(item.batch_date, "MM/DD/YYYY")); // Set the date as needed, e.g., item.date
+    setSelectedDate(formattedDate);
     set_openAddForm(true);
-    setEditMode(true); // Switch to edit mode
-  };
+    setEditMode(true);
+    const transformedIngredients = item.ingredients.map((ingredient) => ({
+      material: {
+        id: ingredient.material_item_id,
+        description: ingredient.material_description,
+        stock: ingredient.material_stock,
+      },
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form submitted", currentItem);
-    // Implement your logic to add or update the product
-    set_openAddForm(false);
+      quantity: ingredient.quantity,
+    }));
+
+    setStacks(transformedIngredients);
   };
 
   const handleInputChange = (e) => {
@@ -203,6 +417,46 @@ const ItemInventory = () => {
     }));
   };
 
+  const removeItem = (item) => {
+    apiClient.post("/items/remove", item).then((res) => {
+      getAllMaterials();
+      getAllItems();
+      showSnackbar({
+        message: `${item.description} removed successfully`,
+        severity: "success",
+      });
+    });
+  };
+
+  const getAllMaterials = () => {
+    apiClient.get("/items/get_materials").then((res) => {
+      setMaterials(res.data);
+    });
+  };
+
+  const getAllItems = () => {
+    apiClient.get("/items/get_all").then((res) => {
+      console.log("items:",res.data)
+      setAllItems(res.data);
+    });
+  };
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredItems, setFilteredItems] = useState(allItems);
+  useEffect(() => {
+    setFilteredItems(
+      allItems.filter(item =>
+        item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.material_description?.toLowerCase().includes(searchQuery.toLowerCase()) // Optional field
+      )
+    );
+  }, [searchQuery, allItems]);
+
+  useEffect(() => {
+    getAllMaterials();
+    getAllItems();
+  }, []);
+
   return (
     <>
       <Dialog
@@ -220,54 +474,53 @@ const ItemInventory = () => {
         }}
       >
         <DialogTitle sx={{ textAlign: "center" }}>
-          {editMode ? "Edit Product" : "Add New Product"}
+          {editMode ? "Edit Item" : "Add New Item"}
         </DialogTitle>
         <DialogContent>
           <Stack
             sx={{ marginTop: "1rem" }}
             component="form"
             onSubmit={(e) => {
-              e.preventDefault();
-              const data = currentItem;
-              console.log("Form submitted", data); //data+stacks
-              console.log("stacks", stacks);
-              set_openAddForm(false);
+              submitItem(e); // Pass the event object to submitItem
             }}
             spacing={2}
           >
             <TextField
+              required
               label="Description"
               name="description"
               variant="outlined"
-              defaultValue={editMode ? currentItem.description : ""}
+              defaultValue={currentItem.description}
               onChange={handleInputChange}
               fullWidth
             />
             <TextField
+              required
               label="Stock"
               name="stock"
-              variant="outlined"
               type="number"
-              defaultValue={editMode ? currentItem.stock : ""}
+              defaultValue={currentItem.stock}
               onChange={handleInputChange}
               fullWidth
             />
             <TextField
+              required
               label="Price(₱)"
-              name="description"
+              name="price"
               variant="outlined"
               type="number"
-              defaultValue={editMode ? currentItem.price : ""}
+              defaultValue={currentItem.price}
               onChange={handleInputChange}
               fullWidth
             />
             <FormControl fullWidth>
               <InputLabel id="demo-simple-select-label">Type</InputLabel>
               <Select
+                required
                 labelId="demo-simple-select-label"
                 id="demo-simple-select"
                 label="Type"
-                defaultValue={editMode ? currentItem.type : ""}
+                defaultValue={currentItem.type}
                 onChange={handleTypeChange}
               >
                 <MenuItem value={"Material"}>Material</MenuItem>
@@ -278,80 +531,120 @@ const ItemInventory = () => {
               <>
                 <Typography>Raw Material Cost:</Typography>
 
-                {stacks.map((stack, index) => (
-                  <Stack key={index} spacing={2} direction="row" sx={{ mb: 2 }}>
-                    <Autocomplete
-                      sx={{ flex: 7 }}
-                      id={`material-autocomplete-${index}`}
-                      options={materials}
-                      getOptionLabel={(option) => option.Department || ""}
-                      value={stack.material}
-                      onChange={(event, newValue) =>
-                        handleChangeMaterial(index, newValue)
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label={`Material #${index + 1}`}
-                        />
-                      )}
-                      renderOption={(props, option) => (
-                        <Box
-                          component="li"
-                          {...props}
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "start",
-                            padding: "8px",
-                          }}
-                        >
-                          <Typography variant="h6">
-                            {option.Department}
-                          </Typography>
-                          <Typography variant="body2" color="textSecondary">
-                            Description: {option.Description}
-                          </Typography>
-                          <Typography variant="body2" color="textSecondary">
-                            Stock: {option.Stock}
-                          </Typography>
-                          <Typography variant="body2" color="textSecondary">
-                            Price: {option.Price}
-                          </Typography>
-                          <Typography variant="body2" color="textSecondary">
-                            Batch Date: {option.Batch_date}
-                          </Typography>
-                        </Box>
-                      )}
-                    />
-                    <TextField
-                      label="Quantity"
-                      name="quantity"
-                      variant="outlined"
-                      type="number"
-                      sx={{ flex: 2 }}
-                      value={stack.quantity}
-                      onChange={(e) =>
-                        handleChangeQuantity(index, e.target.value)
-                      }
-                    />
-                    <Box sx={{ p: "0.25rem", flex: 1 }}>
-                      <Button
-                        disableElevation
-                        variant="contained"
-                        color="error"
-                        sx={{
-                          minWidth: "100%",
-                          minHeight: "100%",
-                          padding: "0.25rem",
+                {stacks.map((stack, index) => {
+                  return (
+                    <Stack
+                      key={`${stack.id}-${index}`}
+                      spacing={2}
+                      direction="row"
+                      sx={{ mb: 2 }}
+                    >
+                      <Autocomplete
+                        required
+                        sx={{ flex: 7 }}
+                        id={`material-autocomplete-${stack.id}`}
+                        key={stack.id}
+                        options={materials}
+                        getOptionLabel={(option) => option.description || ""}
+                        value={
+                          materials.find(
+                            (material) => material.id === stack.material?.id
+                          ) || null
+                        }
+                        onChange={(event, newValue) =>
+                          handleChangeMaterial(index, newValue)
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label={`Material #${index + 1}`}
+                          />
+                        )}
+                        renderOption={(props, option) => {
+                          const { key, ...restProps } = props; // Remove the key prop from the props object
+                          return (
+                            <Box
+                              key={key} // Pass the key prop directly
+                              component="li"
+                              {...restProps}
+                              sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "start",
+                                padding: "8px",
+                              }}
+                            >
+                              <Typography variant="h6" sx={{ fontWeight: 900 }}>
+                                {option.Description}
+                              </Typography>
+                              <Typography variant="body2" color="textSecondary">
+                                Description:{" "}
+                                <strong color="secondary">
+                                  {option.description}
+                                </strong>
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="textSecondary"
+                              >
+                                Stock: {option.stock}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="textSecondary"
+                              >
+                                Price: {option.price}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="textSecondary"
+                              >
+                                Batch Date:{" "}
+                                {new Date(option.batch_date).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  }
+                                )}
+                              </Typography>
+                            </Box>
+                          );
                         }}
-                        onClick={() => handleRemoveStack(index)}
-                      >
-                        <CloseIcon />
-                      </Button>
-                    </Box>
-                  </Stack>
-                ))}
+                      />
+
+                      <TextField
+                        label="Quantity"
+                        name="quantity"
+                        variant="outlined"
+                        type="number"
+                        sx={{ flex: 2 }}
+                        value={stack.quantity}
+                        onChange={(e) =>
+                          handleChangeQuantity(index, e.target.value)
+                        }
+                        inputProps={{ min: 0 }}
+                      />
+                      <Box sx={{ p: "0.25rem", flex: 1 }}>
+                        <Button
+                          disableElevation
+                          variant="contained"
+                          color="error"
+                          sx={{
+                            minWidth: "100%",
+                            minHeight: "100%",
+                            padding: "0.25rem",
+                          }}
+                          onClick={() => handleRemoveStack(index)}
+                        >
+                          <CloseIcon />
+                        </Button>
+                      </Box>
+                    </Stack>
+                  );
+                })}
+
                 <Button
                   variant="outlined"
                   color="success"
@@ -370,6 +663,7 @@ const ItemInventory = () => {
                     type="file"
                     inputProps={{ accept: "image/*" }}
                     label="Upload Image"
+                    onChange={handleFileChange}
                   />
                 </FormControl>
               </>
@@ -378,7 +672,13 @@ const ItemInventory = () => {
               <DatePicker
                 label="Select Date"
                 value={selectedDate}
-                onChange={(newValue) => setSelectedDate(newValue)}
+                onChange={(newValue) => {
+                  setSelectedDate(newValue);
+                  setCurrentItem((prevItem) => ({
+                    ...prevItem,
+                    selectedDate: newValue,
+                  }));
+                }}
                 renderInput={(params) => <TextField {...params} />}
               />
             </LocalizationProvider>
@@ -389,15 +689,43 @@ const ItemInventory = () => {
         </DialogContent>
       </Dialog>
 
-      <Stack spacing={1} alignItems="end" sx={{ height: "100%" }}>
-        <Button
-          color="secondary"
-          sx={{ display: "inline-block" }}
-          variant="contained"
-          onClick={() => set_openAddForm(true)}
+      <Stack
+        spacing={1}
+        alignItems="end"
+        sx={{ height: "100%", width: "100%" }}
+      >
+        <Stack
+          spacing={1}
+          direction="row"
+          sx={{ p: "0.2rem", width: "100%" }}
+          alignItems="center"
+          justifyContent="flex-end"
         >
-          Add Product
-        </Button>
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Search something..."
+
+            value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+            
+          />
+
+          <Button
+            color="secondary"
+            sx={{ width:"fit-content" }}
+            variant="contained"
+            startIcon={<AddCircleOutlineRoundedIcon/>}
+            onClick={() => {
+              set_openAddForm(true);
+              setEditMode(false);
+              setStacks([{ material: { id: 1 }, quantity: 0 }]);
+            }}
+          >
+            Add New Item
+          </Button>
+        </Stack>
+
         <Box
           sx={{
             backgroundColor: "#FFFFFF",
@@ -407,16 +735,24 @@ const ItemInventory = () => {
           }}
         >
           <DataGrid
-            sx={{ width: "100%", height: "100%" }}
-            rows={rows}
+            sx={{ width: "100%" }}
+            getRowHeight={() => "auto"}
+            rows={filteredItems}
             columns={columns}
             pageSize={5}
             rowsPerPageOptions={[5, 10]}
-            checkboxSelection
-            onRowSelected={(params) => handleEdit(params.row)}
           />
         </Box>
       </Stack>
+      <ConfirmationDialog
+        isOpen={openConfirmDialog}
+        label="Are you sure to remove this item??"
+        onClose={() => handleCloseConfirmDialog()}
+        isConfirmFunction={handleConfirmDelete}
+      />
+      {lightboxOpen && (
+        <Lightbox mainSrc={lightboxImage} onCloseRequest={closeLightbox} />
+      )}
     </>
   );
 };
