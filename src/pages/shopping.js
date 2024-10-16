@@ -47,7 +47,7 @@ const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const ITEMS_PER_PAGE = 16;
+const ITEMS_PER_PAGE = 8;
 
 const Shopping = () => {
   const navigate = useNavigate();
@@ -66,7 +66,7 @@ const Shopping = () => {
     setOpenReciept(true);
 
     apiClient.post("/po/checkout", cart).then((res) => {
-      setResultReceipt(res.data)
+      setResultReceipt(res.data);
     });
   };
 
@@ -77,8 +77,8 @@ const Shopping = () => {
   const handleAddToCart = (product) => {
     const isProductInCart = cart.some((item) => item.id === product.id);
     if (!isProductInCart) {
-      setCart((prevCart) => [...prevCart, { ...product, quantity: 0 }]); 
-    } 
+      setCart((prevCart) => [...prevCart, { ...product, quantity: 0 }]);
+    }
     const data = cart;
   };
 
@@ -145,13 +145,13 @@ const Shopping = () => {
               height: "9vh",
               width: "100%",
               display: "text",
-              justifyContent: "center",
+              justifyContent: { xs: "flex-start", sm: "center" },
               textAlign: "center",
               alignItems: "center",
             }}
           >
             <Avatar
-              sx={{ bgcolor: "white" }}
+              sx={{ bgcolor: "white", marginLeft: { xs: "30%", sm: 0 } }}
               onClick={() => navigate("/fpsms/login")}
             >
               <DonutSmallRoundedIcon
@@ -183,7 +183,7 @@ const Shopping = () => {
             justifyContent: "start", // Horizontally center
             alignItems: "center",
             padding: "1rem",
-            overflow:"hidden",
+            overflow: "hidden",
             overflowY: "auto",
           }}
         >
@@ -196,7 +196,6 @@ const Shopping = () => {
               width: "100%",
               padding: "0.4rem 0.4rem",
               borderRadius: "0.2rem",
-
             }}
           >
             <Typography sx={{ flex: 1 }}>Search Something</Typography>
@@ -220,13 +219,37 @@ const Shopping = () => {
           </Stack>
           <Grid
             container
-            spacing={2}
+            spacing={0.5}
             justifyContent="flex-start"
             alignItems="flex-start"
+            sx={{
+              padding: 0,
+              margin: 0,
+            }}
           >
             {currentItems.map((product) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-                <Card sx={{ maxWidth: "250px" }} elevation={3}>
+              <Grid
+                item
+                xs={6}
+                sm={6}
+                md={4}
+                lg={3}
+                key={product.id}
+                sx={{ margin: "1rem auto 1rem auto" }}
+              >
+                <Card
+                  sx={{
+                    maxWidth: {
+                      xs: "95%",
+                      sm: "250px",
+                    },
+                    maxHeight: {
+                      xs: "250px",
+                      sm: "100%",
+                    },
+                  }}
+                  elevation={3}
+                >
                   <CardMedia
                     sx={{
                       m: "auto",
@@ -235,7 +258,10 @@ const Shopping = () => {
                       maxWidth: "100%",
                       width: "auto",
                       // Ensure it scales proportionally
-                      height: "170px", // Keep aspect ratio
+                      height: {
+                        xs: "130px",
+                        sm: "170px",
+                      },
                       objectFit: "cover",
                     }}
                     component="img"
@@ -245,14 +271,30 @@ const Shopping = () => {
                       openLightbox(`/item_images/${product.image}`)
                     }
                   />
-                  <CardContent>
-                    <Typography gutterBottom variant="h6" component="div">
+                  <CardContent
+                    sx={{
+                      p: {
+                        xs: "0 1rem",
+                        sm: "1rem",
+                      },
+                    }}
+                  >
+                    <Typography
+                      gutterBottom
+                      variant={{ xs: "body2", sm: "h6" }}
+                      component="div"
+                    >
                       {product.description}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       ₱ {product.price}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      color={
+                        product.stock <= 0 ? "error.main" : "text.secondary"
+                      }
+                    >
                       Stocks: {product.stock}
                     </Typography>
                   </CardContent>
@@ -270,7 +312,13 @@ const Shopping = () => {
               </Grid>
             ))}
           </Grid>
-          <Stack spacing={2} fullWidth alignItems="flex-start" justifyContent="start" sx={{ mt: 2, width:"100%",p:"0.5rem",borderRadius:"0.4rem" }}>
+          <Stack
+            spacing={2}
+            fullWidth
+            alignItems="flex-start"
+            justifyContent="start"
+            sx={{ mt: 2, width: "100%", p: "0.5rem", borderRadius: "0.4rem" }}
+          >
             <Pagination
               count={totalPages}
               page={currentPage}
@@ -291,8 +339,8 @@ const Shopping = () => {
         onClose={handleClose}
         TransitionComponent={Transition}
         sx={{
-          marginTop: "8vh",
-          height: `calc(100vh - 9vh)`, // This ensures the dialog occupies the rest of the space below 9vh
+          marginTop: { xs: "0", sm: "8vh" }, // Remove margin for mobile
+          height: { xs: "100vh", sm: `calc(100vh - 9vh)` }, // This ensures the dialog occupies the rest of the space below 9vh
         }}
       >
         <AppBar sx={{ position: "relative" }}>
@@ -328,6 +376,7 @@ const Shopping = () => {
         <Box
           sx={{
             display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
             justifyContent: "space-between",
             alignItems: "center",
             padding: "1rem",
@@ -404,7 +453,7 @@ const Shopping = () => {
             sx={{ mt: 3, fontWeight: "bold" }}
             color="secondary"
           >
-           {resultReceipt}
+            {resultReceipt}
           </Typography>
 
           {/* Barcode */}

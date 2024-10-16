@@ -12,3 +12,9 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+@media print {
+  .print-hide {
+    display: none !important; /* Hides the button when printing */
+  }
+}

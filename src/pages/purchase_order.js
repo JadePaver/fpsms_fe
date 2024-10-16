@@ -26,6 +26,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import DonutSmallRoundedIcon from "@mui/icons-material/DonutSmallRounded";
+import PrintRoundedIcon from '@mui/icons-material/PrintRounded';
 
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -689,6 +690,7 @@ const PurchaseOrder = () => {
             color="secondary"
           />
         </Stack>
+        <Button variant="outlined" autoFocus sx={{m:"1rem"}} className="print-hide" onClick={()=>{window.print()}}><PrintRoundedIcon/></Button>
       </Dialog>
     </>
   );

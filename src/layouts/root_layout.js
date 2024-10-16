@@ -18,6 +18,7 @@ import DehazeRoundedIcon from "@mui/icons-material/DehazeRounded";
 import TodayRoundedIcon from "@mui/icons-material/TodayRounded";
 import LogoutIcon from "@mui/icons-material/Logout";
 import DonutSmallRoundedIcon from "@mui/icons-material/DonutSmallRounded";
+import AdminPanelSettingsRoundedIcon from '@mui/icons-material/AdminPanelSettingsRounded';
 
 export const UserContext = createContext();
 const SnackbarContext = createContext();
@@ -89,7 +90,6 @@ export default function RootLayout() {
               justifyContent: "space-between",
               alignItems: "end",
               flexDirection: "column",
-              borderRight: "solid 0.5px #514538",
               transition: `width 0.5s ease-in-out`,
             }}
           >
@@ -337,7 +337,7 @@ export default function RootLayout() {
                       borderTop: sidebarOpen ? "1px solid" : "none",
                       borderBottom: sidebarOpen ? "1px solid" : "none",
                       transition: "border 0.4s ease-in-out",
-                      borderLeft: "none", 
+                      borderLeft: "none",
                       borderRight: "none",
                       padding: ".75rem",
                     }}
@@ -433,11 +433,26 @@ export default function RootLayout() {
                   height: "100%",
                   width: "100%",
                   color: "white",
+                  fontSize: { xs: "1.2rem", sm: "1.5rem" }, // Responsive font size
+                  fontWeight: "medium", // Font weight for the regular text
+                  whiteSpace: "nowrap", // Prevent text wrapping
+                  textOverflow: "ellipsis", // Add ellipsis for long text
+                  overflow: "hidden", // Ensures no overflow beyond container
                 }}
-                variant="h5"
               >
-                Welcome, {user?.role}, {user?.username}
+                Welcome, {user?.role},&nbsp;{/* Add non-breaking space */}
+                <Typography
+                  component="span"
+                  sx={{
+                    fontWeight: "bold", // Make the username bold
+                    fontSize: { xs: "1.4rem", sm: "1.7rem" }, // Larger font for the username
+                    color: "primary.main", // Optional: Change color to make it stand out (gold)
+                  }}
+                >
+                  {user?.username}
+                </Typography>
               </Typography>
+
               <Button
                 variant="outlined"
                 sx={{ margin: "0.75rem" }}
