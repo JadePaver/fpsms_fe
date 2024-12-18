@@ -316,7 +316,7 @@ export default function RootLayout() {
                         transition: "font-size 0.3s",
                       }}
                     >
-                      Delivery Scheadule
+                      Delivery Schedule
                     </Typography>
                   </Stack>
                 </Button>

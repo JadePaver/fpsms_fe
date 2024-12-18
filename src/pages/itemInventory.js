@@ -3,6 +3,7 @@ import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
 import Dialog from "@mui/material/Dialog";
 import TextField from "@mui/material/TextField";
 import Select from "@mui/material/Select";
@@ -29,6 +30,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
 
 import { DataGrid } from "@mui/x-data-grid";
 import { useEffect, useState } from "react";
@@ -38,8 +40,11 @@ const ItemInventory = () => {
   const [stacks, setStacks] = useState([{ material: { id: 1 }, quantity: 0 }]);
   const [openAddForm, set_openAddForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [restockDate, setRestockDate] = useState(dayjs());
   const [editMode, setEditMode] = useState(false);
   const [allItems, setAllItems] = useState([]);
+  const [isRestockOpen, setIsRestockOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
 
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -79,11 +84,29 @@ const ItemInventory = () => {
 
   const [currentItem, setCurrentItem] = useState({
     description: "",
+    remarks: "",
     stock: 0,
     price: 0,
     type: "",
     selectedDate: selectedDate,
   });
+
+  const submitRestockDate = async () => {
+    try {
+      const data = { ...selectedRow, restock_date: restockDate.format("YYYY-MM-DD") };
+      const response = await apiClient.post(`/items/update_restock_date`, data);
+      console.log("RESPONSE:",response.data)
+      showSnackbar({
+        message: response.data ,
+        severity: "success",
+      });
+    } catch (error) {
+      showSnackbar({
+        message: "Failed to Update Restocking Date",
+        severity: "error",
+      });
+    }
+  };
 
   const submitItem = (e) => {
     e.preventDefault();
@@ -102,7 +125,7 @@ const ItemInventory = () => {
     let hasStockIssue = false;
 
     if (currentItem.type === "Furniture") {
-      if (stacks.length < 2) {
+      if (stacks.length < 1) {
         showSnackbar({
           message: "At least 1 materials is required for Furniture.",
           severity: "warning",
@@ -337,6 +360,30 @@ const ItemInventory = () => {
             height: "100%",
           }}
         >
+          {params.row?.stock <= 0 && (
+            <Button
+              disableElevation
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 0,
+                minWidth: 0,
+                minHeight: 0,
+                width: "40px",
+                height: "40px",
+                backgroundColor: "orange",
+              }}
+              variant="contained"
+              onClick={() => {
+                setIsRestockOpen(true);
+                setSelectedRow(params.row);
+              }}
+            >
+              <RestoreRoundedIcon />
+            </Button>
+          )}
+
           <Button
             disableElevation
             sx={{
@@ -353,6 +400,7 @@ const ItemInventory = () => {
             variant="contained"
             onClick={() => {
               handleEdit(params.row);
+              console.log("UPDATING:", params.row);
             }}
           >
             <EditIcon />
@@ -436,18 +484,21 @@ const ItemInventory = () => {
 
   const getAllItems = () => {
     apiClient.get("/items/get_all").then((res) => {
-      console.log("items:",res.data)
+      console.log("items:", res.data);
       setAllItems(res.data);
     });
   };
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [filteredItems, setFilteredItems] = useState(allItems);
   useEffect(() => {
     setFilteredItems(
-      allItems.filter(item =>
-        item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.material_description?.toLowerCase().includes(searchQuery.toLowerCase()) // Optional field
+      allItems.filter(
+        (item) =>
+          item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.material_description
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) // Optional field
       )
     );
   }, [searchQuery, allItems]);
@@ -487,7 +538,7 @@ const ItemInventory = () => {
           >
             <TextField
               required
-              label="Description"
+              label="Name"
               name="description"
               variant="outlined"
               defaultValue={currentItem.description}
@@ -682,11 +733,63 @@ const ItemInventory = () => {
                 renderInput={(params) => <TextField {...params} />}
               />
             </LocalizationProvider>
+
+            <TextField
+              required
+              label="Description"
+              name="remarks"
+              variant="outlined"
+              multiline
+              rows={5}
+              defaultValue={currentItem.remarks}
+              onChange={handleInputChange}
+              fullWidth
+            />
+
             <Button variant="contained" color="primary" type="submit" fullWidth>
               {editMode ? "Update" : "Submit"}
             </Button>
           </Stack>
         </DialogContent>
+      </Dialog>
+      <Dialog
+        open={isRestockOpen}
+        onClose={() => {
+          setIsRestockOpen(false);
+        }}
+      >
+        <DialogTitle>Choose next Restock Date</DialogTitle>
+        <DialogContent>
+          <Box sx={{ p: "1rem 0" }}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Select Restocking Date"
+                value={restockDate}
+                onChange={(newValue) => {
+                  setRestockDate(newValue);
+                  setCurrentItem((prevItem) => ({
+                    ...prevItem,
+                    restockDate: newValue,
+                  }));
+                }}
+                renderInput={(params) => <TextField {...params} />}
+              />
+            </LocalizationProvider>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button disableElevation onClick={() => setIsRestockOpen(false)}>
+            Cancel
+          </Button>
+
+          <Button
+            disableElevation
+            variant="contained"
+            onClick={submitRestockDate}
+          >
+            Confirm
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <Stack
@@ -705,17 +808,15 @@ const ItemInventory = () => {
             variant="outlined"
             size="small"
             placeholder="Search something..."
-
             value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-            
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
 
           <Button
             color="secondary"
-            sx={{ width:"fit-content" }}
+            sx={{ width: "fit-content" }}
             variant="contained"
-            startIcon={<AddCircleOutlineRoundedIcon/>}
+            startIcon={<AddCircleOutlineRoundedIcon />}
             onClick={() => {
               set_openAddForm(true);
               setEditMode(false);

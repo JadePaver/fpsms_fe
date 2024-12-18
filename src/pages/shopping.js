@@ -7,8 +7,10 @@ import Lightbox from "react-image-lightbox";
 import Barcode from "react-barcode";
 
 import Cart from "../component/cart";
+import { formatDate } from "../configs/formmatter";
 
 import Box from "@mui/material/Box";
+import Popover from "@mui/material/Popover";
 import Stack from "@mui/material/Stack";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
@@ -61,6 +63,9 @@ const Shopping = () => {
   const [lightboxImage, setLightboxImage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const isPopoverOpen = Boolean(anchorEl);
 
   const handleCheckout = () => {
     setOpenReciept(true);
@@ -277,6 +282,7 @@ const Shopping = () => {
                         xs: "0 1rem",
                         sm: "1rem",
                       },
+                      transition: "all",
                     }}
                   >
                     <Typography
@@ -297,16 +303,50 @@ const Shopping = () => {
                     >
                       Stocks: {product.stock}
                     </Typography>
+                    <Box
+                      sx={{
+                        maxHeight: "1rem",
+                        overflow: "hidden",
+                        transition: "max-height 0.3s ease-in-out",
+                        "&:hover": {
+                          maxHeight: "250px",
+                        },
+                      }}
+                    >
+                      <Typography variant="body2" color="text.secondary">
+                        Description
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {product.remarks}
+                      </Typography>
+                    </Box>
                   </CardContent>
                   <Stack sx={{ p: "0 1rem 1rem 1rem" }}>
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      color="secondary"
-                      onClick={() => handleAddToCart(product)}
-                    >
-                      Add to Cart
-                    </Button>
+                    {product.stock <= 0 ? (
+                      <>
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          color="secondary"
+                          disabled
+                        >
+                          {product?.restock_date
+                            ? `Out of Stock Until ${formatDate(
+                                product?.restock_date
+                              )}`
+                            : "Out of Stock"}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        color="secondary"
+                        onClick={() => handleAddToCart(product)}
+                      >
+                        Add to Cart
+                      </Button>
+                    )}
                   </Stack>
                 </Card>
               </Grid>
