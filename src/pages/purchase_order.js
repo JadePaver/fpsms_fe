@@ -1,4 +1,10 @@
-import React, { useState, useContext, useEffect, forwardRef,useRef  } from "react";
+import React, {
+  useState,
+  useContext,
+  useEffect,
+  forwardRef,
+  useRef,
+} from "react";
 import { UserContext } from "../layouts/root_layout";
 
 import apiClient from "../axios/axiosInstance";
@@ -26,7 +32,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import DonutSmallRoundedIcon from "@mui/icons-material/DonutSmallRounded";
-import PrintRoundedIcon from '@mui/icons-material/PrintRounded';
+import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
 
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -45,7 +51,7 @@ const PurchaseOrder = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [openReciept, setOpenReciept] = useState(false);
 
-  const dialogRef = useRef(null); 
+  const dialogRef = useRef(null);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value); // Update search term on input change
@@ -159,16 +165,6 @@ const PurchaseOrder = () => {
 
   const reciept_columns = [
     { field: "receipt", headerName: "Reciept #", flex: 2 },
-    // {
-    //   field: "date_of_purchased",
-    //   headerName: "Checkout Date",
-    //   flex: 2,
-    //   renderCell: (params) => {
-    //     return (
-    //       <Typography>{formatDate(params.row.date_of_purchased)}</Typography>
-    //     );
-    //   },
-    // },
     {
       field: "item_list",
       headerName: "List of Items",
@@ -205,6 +201,16 @@ const PurchaseOrder = () => {
             : "black";
         return (
           <Typography sx={{ color: statusColor }}>{params.value}</Typography>
+        );
+      },
+    },
+    {
+      field: "date_of_purchased",
+      headerName: "Checkout Date",
+      flex: 2,
+      renderCell: (params) => {
+        return (
+          <Typography>{formatDate(params.row.date_of_purchased)}</Typography>
         );
       },
     },
@@ -297,7 +303,6 @@ const PurchaseOrder = () => {
       setAllPO(res.data);
     });
   };
-
 
   useEffect(() => {
     fetchFurnitures();
@@ -555,7 +560,6 @@ const PurchaseOrder = () => {
             alignItems: "center",
           }}
           ref={dialogRef}
-          
         >
           <Stack
             direction="row"
@@ -690,7 +694,17 @@ const PurchaseOrder = () => {
             color="secondary"
           />
         </Stack>
-        <Button variant="outlined" autoFocus sx={{m:"1rem"}} className="print-hide" onClick={()=>{window.print()}}><PrintRoundedIcon/></Button>
+        <Button
+          variant="outlined"
+          autoFocus
+          sx={{ m: "1rem" }}
+          className="print-hide"
+          onClick={() => {
+            window.print();
+          }}
+        >
+          <PrintRoundedIcon />
+        </Button>
       </Dialog>
     </>
   );

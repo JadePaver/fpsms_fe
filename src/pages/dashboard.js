@@ -20,7 +20,7 @@ const colors = [
   "#7E57C2", // Default deep purple color
   "#66BB6A", // Default green color
   "#FF8A80", // New light red color
-  "#81D4FA"  // New light sky blue color
+  "#81D4FA", // New light sky blue color
 ];
 
 const columns = [
@@ -89,16 +89,25 @@ const Dashboard = () => {
   };
 
   const formattedData = furnitures
-  .sort((a, b) => b.stock - a.stock) // Sort by stock in descending order
-  .slice(0, 8) // Get only the first 8 items
-  .map((item, index) => ({
-    id: index,
-    value: item.stock,
-    label: item.description,
-    color: colors[index],
-  }));
+    .sort((a, b) => b.stock - a.stock) // Sort by stock in descending order
+    .slice(0, 8) // Get only the first 8 items
+    .map((item, index) => ({
+      id: index,
+      value: item.stock,
+      label: item.description,
+      color: colors[index],
+    }));
 
   useEffect(() => {
+    fetch("https://api.ipify.org?format=json")
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Public IP Address:", data);
+      })
+      .catch((error) => {
+        console.error("Error fetching IP address:", error);
+      });
+
     fetchPO();
     fetchFurnitures();
   }, []);
@@ -228,7 +237,7 @@ const Dashboard = () => {
               alignItems: "center",
             }}
           >
-            <Typography variant="subtitle1">Recent Sales </Typography>
+            <Typography variant="subtitle1">Recent Sales </Typography>  
             <DataGrid
               sx={{ width: "100%" }}
               rows={allPO}

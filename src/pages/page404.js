@@ -27,8 +27,6 @@ const Home = () => {
           We’re Sorry! The Page Took a Detour
         </Typography>
         <Button variant="outlined" autoFocus onClick={() => navigate("fpsms/login")}>
-        
-
           Redirect Me
         </Button>
       </Stack>
