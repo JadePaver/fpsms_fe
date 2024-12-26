@@ -10,6 +10,7 @@ import { UserContext } from "../layouts/root_layout";
 import apiClient from "../axios/axiosInstance";
 import { formatDate } from "../configs/formmatter";
 import { useSnackbar } from "../layouts/root_layout";
+import PrintPODialog from "../component/printPODialog";
 import Barcode from "react-barcode";
 
 import Stack from "@mui/material/Stack";
@@ -87,7 +88,7 @@ const PurchaseOrder = () => {
     return topLevelMatch || itemListMatch;
   });
 
-  const submitSale = (e) => {
+  const submitSale = async(e) => {
     e.preventDefault();
 
     const data = {
@@ -97,10 +98,9 @@ const PurchaseOrder = () => {
       item_list: purchaseItems,
     };
 
-    apiClient.post("/po/submit_sale", data).then((res) => {
+    await apiClient.post("/po/submit_sale", data).then((res) => {
       fetchFurnitures();
       fetchPO();
-      console.log("reciept:", res.data);
       setReceiptNumber(res.data);
       showSnackbar({
         message: "Sale saved Successfully.",
@@ -153,7 +153,7 @@ const PurchaseOrder = () => {
   };
 
   const handleViewPO = (row) => {
-    if (row.status === "Completely Paid") {
+    if (row.status === "Paid") {
       setIsPurchase(true);
     } else {
       setIsPurchase(false);
@@ -196,7 +196,7 @@ const PurchaseOrder = () => {
         const statusColor =
           params.value === "Awaiting Payment"
             ? "#BEC400"
-            : params.value === "Completely Paid"
+            : params.value === "Paid"
             ? "#008000"
             : "black";
         return (
@@ -486,34 +486,37 @@ const PurchaseOrder = () => {
             spacing={1}
             sx={{
               p: "0.2rem",
-              justifyContent: "flex-end",
+              justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <TextField
-              variant="outlined"
-              size="small"
-              placeholder="Search something..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-            />
-            <Button
-              variant="contained"
-              sx={{ width: "fit-content" }}
-              startIcon={
-                recieptView ? (
-                  <Inventory2OutlinedIcon />
-                ) : (
-                  <ReceiptLongRoundedIcon />
-                )
-              }
-              disableElevation
-              onClick={() => {
-                setRecieptView(!recieptView);
-              }}
-            >
-              {recieptView ? "Purchase Order Table" : "Furnitures Table"}
-            </Button>
+            <PrintPODialog />
+            <Stack direction="row" spacing={2}>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Search something..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+              <Button
+                variant="contained"
+                sx={{ width: "fit-content" }}
+                startIcon={
+                  recieptView ? (
+                    <Inventory2OutlinedIcon />
+                  ) : (
+                    <ReceiptLongRoundedIcon />
+                  )
+                }
+                disableElevation
+                onClick={() => {
+                  setRecieptView(!recieptView);
+                }}
+              >
+                {recieptView ? "Purchase Order Table" : "Furnitures Table"}
+              </Button>
+            </Stack>
           </Stack>
 
           {recieptView ? (

@@ -18,7 +18,7 @@ import DehazeRoundedIcon from "@mui/icons-material/DehazeRounded";
 import TodayRoundedIcon from "@mui/icons-material/TodayRounded";
 import LogoutIcon from "@mui/icons-material/Logout";
 import DonutSmallRoundedIcon from "@mui/icons-material/DonutSmallRounded";
-import AdminPanelSettingsRoundedIcon from '@mui/icons-material/AdminPanelSettingsRounded';
+import AdminPanelSettingsRoundedIcon from "@mui/icons-material/AdminPanelSettingsRounded";
 
 export const UserContext = createContext();
 const SnackbarContext = createContext();
@@ -56,7 +56,6 @@ export default function RootLayout() {
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
-
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
 
@@ -131,54 +130,56 @@ export default function RootLayout() {
                 alignSelf: "center",
               }}
             >
-              <Stack
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  width: "100%",
-                }}
-              >
-                <Button
-                  variant="outlined"
+              {user  && user.role === "Admin" && (
+                <Stack
                   sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
                     width: "100%",
-                    borderRadius: 0,
-                    borderTop: sidebarOpen ? "1px solid" : "none",
-                    borderBottom: sidebarOpen ? "1px solid" : "none",
-                    transition: "border 0.4s ease-in-out",
-                    borderLeft: "none", // Remove left border
-                    borderRight: "none",
-                    padding: ".75rem",
                   }}
-                  onClick={() => navigate("")}
                 >
-                  <Stack
-                    direction="row"
-                    spacing={1}
+                  <Button
+                    variant="outlined"
                     sx={{
                       width: "100%",
-                      display: "flex",
-                      justifyContent: "space-between", // Space between icon and button
-                      alignItems: "center",
+                      borderRadius: 0,
+                      borderTop: sidebarOpen ? "1px solid" : "none",
+                      borderBottom: sidebarOpen ? "1px solid" : "none",
+                      transition: "border 0.4s ease-in-out",
+                      borderLeft: "none", // Remove left border
+                      borderRight: "none",
+                      padding: ".75rem",
                     }}
+                    onClick={() => navigate("")}
                   >
-                    <SpaceDashboardRoundedIcon
-                      sx={{ height: "30px", width: "30px", margin: "auto" }}
-                    />
-                    <Typography
+                    <Stack
+                      direction="row"
+                      spacing={1}
                       sx={{
                         width: "100%",
-                        textAlign: "left",
-                        fontSize: sidebarOpen ? "1rem" : "0",
-                        transition: "font-size 0.3s",
+                        display: "flex",
+                        justifyContent: "space-between", // Space between icon and button
+                        alignItems: "center",
                       }}
                     >
-                      Dashboard
-                    </Typography>
-                  </Stack>
-                </Button>
-              </Stack>
+                      <SpaceDashboardRoundedIcon
+                        sx={{ height: "30px", width: "30px", margin: "auto" }}
+                      />
+                      <Typography
+                        sx={{
+                          width: "100%",
+                          textAlign: "left",
+                          fontSize: sidebarOpen ? "1rem" : "0",
+                          transition: "font-size 0.3s",
+                        }}
+                      >
+                        Dashboard
+                      </Typography>
+                    </Stack>
+                  </Button>
+                </Stack>
+              )}
               <Stack
                 sx={{
                   display: "flex",

@@ -77,13 +77,11 @@ const Dashboard = () => {
 
   const fetchPO = () => {
     apiClient.get("/po/get_all").then((res) => {
-      console.log("PO:", res.data);
       setAllPO(res.data);
     });
   };
   const fetchFurnitures = () => {
     apiClient.get("/items/get_furnitures").then((res) => {
-      console.log("furniture:", res.data);
       setFurnitures(res.data);
     });
   };
@@ -99,23 +97,17 @@ const Dashboard = () => {
     }));
 
   useEffect(() => {
-    fetch("https://api.ipify.org?format=json")
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Public IP Address:", data);
-      })
-      .catch((error) => {
-        console.error("Error fetching IP address:", error);
-      });
+
+
 
     fetchPO();
     fetchFurnitures();
   }, []);
 
-  // Aggregate data by date_of_purchased
+  // Aggregate data by date_of_purchased (excluding time)
   const chartData = allPO.reduce((acc, po) => {
-    // Convert date_of_purchased to a Date object
-    const date = new Date(po.date_of_purchased).toDateString(); // Use toDateString to ignore time for grouping
+    // Extract only the date portion (YYYY-MM-DD)
+    const date = new Date(po.date_of_purchased).toISOString().split("T")[0];
 
     // Check if the date already exists in the accumulator
     const existingEntry = acc.find((item) => item.date_of_purchased === date);
@@ -134,9 +126,9 @@ const Dashboard = () => {
     return acc; // Return the accumulator for the next iteration
   }, []);
 
-  // If you need to convert the date back to a Date object in the final chartData
+  // Prepare final chart data with cleaned date format
   const finalChartData = chartData.map((item) => ({
-    date_of_purchased: new Date(item.date_of_purchased), // Convert back to Date object if needed
+    date_of_purchased: item.date_of_purchased, // Convert back to Date object for charting if necessary
     total_amount: item.total_amount,
   }));
 
@@ -163,8 +155,17 @@ const Dashboard = () => {
                 labelStyle: {
                   paddingTop: "1rem",
                 },
-                scaleType: "time",
-                domain: ["dataMin", "dataMax"], // Automatically set the domain based on data
+                scaleType: "band", // Use a categorical scale for string dates
+                tickFormatter: (date) => {
+                  // Format the date in MM/DD/YYYY format if needed
+                  const parsedDate = new Date(date);
+                  const options = {
+                    month: "2-digit",
+                    day: "2-digit",
+                    year: "numeric",
+                  };
+                  return parsedDate.toLocaleDateString("en-US", options);
+                },
               },
             ]}
             yAxis={[
@@ -180,7 +181,7 @@ const Dashboard = () => {
             series={[
               {
                 dataKey: "total_amount",
-                label: "Total Amount Purchased",
+                label: "Daily Sales",
                 stroke: "blue",
               },
             ]}
@@ -237,7 +238,7 @@ const Dashboard = () => {
               alignItems: "center",
             }}
           >
-            <Typography variant="subtitle1">Recent Sales </Typography>  
+            <Typography variant="subtitle1">Recent Sales </Typography>
             <DataGrid
               sx={{ width: "100%" }}
               rows={allPO}

@@ -10,37 +10,30 @@ import Cart from "../component/cart";
 import { formatDate } from "../configs/formmatter";
 
 import Box from "@mui/material/Box";
-import Popover from "@mui/material/Popover";
+
+import Popper from "@mui/material/Popper";
 import Stack from "@mui/material/Stack";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
-import CardActions from "@mui/material/CardActions";
 import CardContent from "@mui/material/CardContent";
 import CardMedia from "@mui/material/CardMedia";
-
-import ListItemText from "@mui/material/ListItemText";
-import ListItemButton from "@mui/material/ListItemButton";
-import List from "@mui/material/List";
-import Divider from "@mui/material/Divider";
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import IconButton from "@mui/material/IconButton";
-import CloseIcon from "@mui/icons-material/Close";
-import Slide from "@mui/material/Slide";
-
 import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogTitle from "@mui/material/DialogTitle";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-
+import AppBar from "@mui/material/AppBar";
+import Fab from "@mui/material/Fab";
+import Toolbar from "@mui/material/Toolbar";
+import Slide from "@mui/material/Slide";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import Badge from "@mui/material/Badge";
 import Pagination from "@mui/material/Pagination";
+
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import LiveHelpOutlinedIcon from "@mui/icons-material/LiveHelpOutlined";
 
 import DonutSmallRoundedIcon from "@mui/icons-material/DonutSmallRounded";
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
@@ -52,6 +45,7 @@ const Transition = forwardRef(function Transition(props, ref) {
 const ITEMS_PER_PAGE = 8;
 
 const Shopping = () => {
+  const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [cart, setCart] = useState([]);
@@ -64,8 +58,15 @@ const Shopping = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [anchorEl, setAnchorEl] = useState(null);
-  const isPopoverOpen = Boolean(anchorEl);
+  const handleMouseEnter = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMouseLeave = () => {
+    setAnchorEl(null);
+  };
+
+  const openInfo = Boolean(anchorEl);
 
   const handleCheckout = () => {
     setOpenReciept(true);
@@ -222,6 +223,7 @@ const Shopping = () => {
               </Badge>
             </Button>
           </Stack>
+
           <Grid
             container
             spacing={0.5}
@@ -249,7 +251,7 @@ const Shopping = () => {
                       sm: "250px",
                     },
                     maxHeight: {
-                      xs: "250px",
+                      xs: "300px",
                       sm: "100%",
                     },
                   }}
@@ -508,6 +510,53 @@ const Shopping = () => {
           </Box>
         </DialogContent>
       </Dialog>
+      <Fab
+        color="primary"
+        aria-label="add"
+        size="medium" // Fix: size prop doesn't accept an object
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        sx={{
+          position: "fixed",
+          bottom: 16, // Adjust the distance from the bottom
+          right: 16, // Adjust the distance from the right
+          zIndex: 1000, // Ensure it appears above other elements
+          padding: 0,
+        }}
+      >
+        <LiveHelpOutlinedIcon />
+      </Fab>
+      <Popper
+        open={openInfo}
+        anchorEl={anchorEl}
+        placement="left-start" // Adjust placement if needed
+        sx={{
+          zIndex: 1100, // Ensure the popper appears above other elements
+        }}
+      >
+         <Box
+          sx={{
+            p: 2,
+            bgcolor: "background.paper",
+            borderRadius: 1,
+            boxShadow: 3,
+            maxWidth: 300,
+          }}
+        >
+          <Typography variant="body1" fontWeight={600} sx={{ mb: 1, textAlign: "justify"}}>
+            If you have any concerns, reach us through our contact information below :
+          </Typography>
+          <Typography variant="body2">
+            Email: <strong>contact@fpsms.com</strong>
+          </Typography>
+          <Typography variant="body2">
+            Phone: <strong>+1-234-567-8901</strong>
+          </Typography>
+          <Typography variant="body2">
+            Address: <strong>123 Main Street, Cityville, USA</strong>
+          </Typography>
+        </Box>
+      </Popper>
     </>
   );
 };
