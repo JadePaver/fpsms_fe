@@ -180,7 +180,7 @@ const PurchaseOrder = () => {
             }}
           >
             {params.row?.itemlist.map((item) => (
-              <Typography key={item.id}>
+              <Typography variant="h6" key={item.id}>
                 {item.description} (Qty: {item.quantity})
               </Typography>
             ))}

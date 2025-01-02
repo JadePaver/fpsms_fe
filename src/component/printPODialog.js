@@ -6,6 +6,7 @@ import {
   DialogTitle,
   Stack,
   Box,
+  Typography,
 } from "@mui/material";
 
 import { useState, useRef } from "react";
@@ -32,18 +33,28 @@ const PrintPODialog = () => {
       headerName: "Items",
       flex: 1,
       renderCell: (params) => {
+        // Ensure params.formattedValue is an array
+        if (!Array.isArray(params.formattedValue)) {
+          return <span>No items</span>;
+        }
+
         return (
           <>
-            <Stack>
-              {params.formattedValue.map((item) => {
-                return (
-                  <>
-                    <Stack direction="row" spacing={2}>
-                      {item?.description} {item?.quantity}X - ₱{item?.price}
-                    </Stack>
-                  </>
-                );
-              })}
+            <Stack
+              sx={{
+                width: "100%",
+                minHeight: "100%",
+                overflowY: "auto",
+                maxHeight: "100px",
+              }}
+            >
+              {params.formattedValue.map((item, index) => (
+                <Typography key={item.id}>
+                  <span>{item.description}</span>{" "}
+                  <span>{item.quantity}x</span>{" - "}
+                  <span>₱{item.price}</span>
+                </Typography>
+              ))}
             </Stack>
           </>
         );
@@ -88,7 +99,9 @@ const PrintPODialog = () => {
             minWidth: "60vw",
           },
         }}
-        onClose={()=>{setIsOpen(false)}}
+        onClose={() => {
+          setIsOpen(false);
+        }}
       >
         <DialogTitle>
           Choose date range to generate Purchase Order records
@@ -119,28 +132,33 @@ const PrintPODialog = () => {
               />
             </LocalizationProvider>
           </Stack>
-          <Box ref={dialogRef} sx={{minWidth:"100%"}}>
+          <Box ref={dialogRef} sx={{ minWidth: "100%" }}>
             <DataGrid
-              sx={{ width: "100%", height: "100%" }}
+              sx={{ width: "100%", minHeight: "100%" }}
               rows={reportData}
               columns={columns}
             />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={()=>{setIsOpen(false)}}>Cancel</Button>{" "}
+          <Button
+            onClick={() => {
+              setIsOpen(false);
+            }}
+          >
+            Cancel
+          </Button>{" "}
           <Button
             variant="contained"
-            onClick={
-              () => {
-                handleSubmit();
-              }
-            }
+            disableElevation
+            onClick={() => {
+              handleSubmit();
+            }}
           >
             Generate
           </Button>
           <Button
-            variant="contained"
+            variant="outlined"
             onClick={() => {
               window.print();
             }}

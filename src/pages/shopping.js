@@ -46,6 +46,8 @@ const ITEMS_PER_PAGE = 8;
 
 const Shopping = () => {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [isMouseOver, setIsMouseOver] = useState(false);
+
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [cart, setCart] = useState([]);
@@ -60,13 +62,21 @@ const Shopping = () => {
 
   const handleMouseEnter = (event) => {
     setAnchorEl(event.currentTarget);
+    setIsMouseOver(true);
   };
 
   const handleMouseLeave = () => {
-    setAnchorEl(null);
+    setIsMouseOver(false);
   };
 
-  const openInfo = Boolean(anchorEl);
+  useEffect(() => {
+    if (!isMouseOver) {
+      const timer = setTimeout(() => {
+        setAnchorEl(null);
+      }, 200); // Add a small delay for smoother UX
+      return () => clearTimeout(timer);
+    }
+  }, [isMouseOver]);
 
   const handleCheckout = () => {
     setOpenReciept(true);
@@ -527,14 +537,17 @@ const Shopping = () => {
         <LiveHelpOutlinedIcon />
       </Fab>
       <Popper
-        open={openInfo}
+        open={!!anchorEl}
         anchorEl={anchorEl}
         placement="left-start" // Adjust placement if needed
         sx={{
           zIndex: 1100, // Ensure the popper appears above other elements
         }}
+        disablePortal
       >
-         <Box
+        <Box
+          onMouseEnter={() => setIsMouseOver(true)}
+          onMouseLeave={() => setIsMouseOver(false)}
           sx={{
             p: 2,
             bgcolor: "background.paper",
@@ -543,8 +556,13 @@ const Shopping = () => {
             maxWidth: 300,
           }}
         >
-          <Typography variant="body1" fontWeight={600} sx={{ mb: 1, textAlign: "justify"}}>
-            If you have any concerns, reach us through our contact information below :
+          <Typography
+            variant="body1"
+            fontWeight={600}
+            sx={{ mb: 1, textAlign: "justify" }}
+          >
+            If you have any concerns, reach us through our contact information
+            below :
           </Typography>
           <Typography variant="body2">
             Email: <strong>contact@fpsms.com</strong>
@@ -553,7 +571,20 @@ const Shopping = () => {
             Phone: <strong>+1-234-567-8901</strong>
           </Typography>
           <Typography variant="body2">
-            Address: <strong>123 Main Street, Cityville, USA</strong>
+            Address:{" "}
+            <strong>14th St, Villamonte , Bacolod City, Philippine</strong>
+          </Typography>
+          <Typography variant="body2">
+            Contact Owner:{" "}
+            <strong>
+              <a
+                href="https://www.facebook.com/butch.tumbale.1?mibextid=ZbWKwL"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Butch Tumbale
+              </a>
+            </strong>
           </Typography>
         </Box>
       </Popper>
