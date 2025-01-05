@@ -41,18 +41,21 @@ const PrintPODialog = () => {
         return (
           <>
             <Stack
+              spacing={1}
               sx={{
                 width: "100%",
-                minHeight: "100%",
-                overflowY: "auto",
-                maxHeight: "100px",
+                maxHeight: 5500, // Limit the height of the cell
+                overflowY: "auto", // Add vertical scrolling for overflow
+                overflowX: "hidden",
+                padding: "4px", // Add padding for better appearance
+                backgroundColor: "#f9f9f9", // Optional: Add background for better readability
+                borderRadius: "4px", // Optional: Add rounded corners
               }}
             >
               {params.formattedValue.map((item, index) => (
-                <Typography key={item.id}>
-                  <span>{item.description}</span>{" "}
-                  <span>{item.quantity}x</span>{" - "}
-                  <span>₱{item.price}</span>
+                <Typography key={index} variant="body2" component="div">
+                  <strong>{item.description}</strong> - {item.quantity}x ₱
+                  {item.price}
                 </Typography>
               ))}
             </Stack>
@@ -66,7 +69,6 @@ const PrintPODialog = () => {
       headerName: "Total Amount",
       flex: 1,
       renderCell: (params) => {
-        console.log("params", params);
         return <>₱{params?.formattedValue}</>;
       },
     },
@@ -74,10 +76,10 @@ const PrintPODialog = () => {
 
   const handleSubmit = async () => {
     try {
-      const data = { start: startDate, end: endDate };
+      const adjustedEndDate = endDate.add(1, "day");
+      const data = { start: startDate, end: adjustedEndDate };
       const response = await apiClient.post("/po/report", data);
       setReportData(response.data);
-      console.log("REPORTS:", response.data);
     } catch (error) {}
   };
 
@@ -134,7 +136,7 @@ const PrintPODialog = () => {
           </Stack>
           <Box ref={dialogRef} sx={{ minWidth: "100%" }}>
             <DataGrid
-              sx={{ width: "100%", minHeight: "100%" }}
+              sx={{ minWidth: "100%", minHeight: "100%" }}
               rows={reportData}
               columns={columns}
             />
